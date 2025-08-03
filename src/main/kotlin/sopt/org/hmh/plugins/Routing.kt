@@ -9,6 +9,7 @@ import io.ktor.server.routing.*
 import sopt.org.hmh.global.common.response.BaseResponse
 import sopt.org.hmh.global.common.exception.BusinessException
 import sopt.org.hmh.domain.user.controller.userRoutes
+import sopt.org.hmh.domain.auth.controller.authRoutes
 
 fun Application.configureRouting() {
     install(StatusPages) {
@@ -62,19 +63,19 @@ fun Application.configureRouting() {
         
         // API 라우팅
         route("/api/v1") {
-            // 인증이 필요하지 않은 라우트 (테스트용)
+            // 인증이 필요하지 않은 라우트
+            authRoutes()
             userRoutes()
             
-            // 인증이 필요한 라우트 (JWT 설정 완료 후 활성화 예정)
-            // authenticate("jwt-auth") {
-            //     userRoutes()
-            //     challengeRoutes()
-            // }
+            // 인증이 필요한 라우트 (JWT 설정 완료)
+            authenticate("jwt-auth") {
+                // 여기에 인증이 필요한 라우트들 추가 예정
+            }
             
-            // 관리자 전용 라우트 (JWT 설정 완료 후 활성화 예정)
-            // authenticate("jwt-admin") {
-            //     adminRoutes()
-            // }
+            // 관리자 전용 라우트 (JWT 설정 완료)
+            authenticate("jwt-admin") {
+                // 여기에 관리자 전용 라우트들 추가 예정
+            }
         }
     }
 }
