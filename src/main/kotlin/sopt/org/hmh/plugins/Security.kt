@@ -8,14 +8,12 @@ import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.http.*
 import io.ktor.server.response.*
 import sopt.org.hmh.global.common.response.BaseResponse
+import sopt.org.hmh.global.auth.jwt.JwtProvider
 
 fun Application.configureSecurity() {
-    val config = environment.config
-    val secret = config.propertyOrNull("jwt.secret")?.getString()
-    val issuer = config.propertyOrNull("jwt.issuer")?.getString()
-    val audience = config.propertyOrNull("jwt.audience")?.getString()
+    val jwtSecret = environment.config.propertyOrNull("jwt.secret")?.getString()
     
-    if (secret.isNullOrEmpty() || issuer.isNullOrEmpty() || audience.isNullOrEmpty()) {
+    if (jwtSecret.isNullOrEmpty()) {
         println("⚠️ JWT 설정이 불완전합니다. 인증 기능은 비활성화됩니다.")
         return
     }
@@ -25,22 +23,29 @@ fun Application.configureSecurity() {
             realm = "HMH Server"
             verifier(
                 JWT
-                    .require(Algorithm.HMAC256(secret))
-                    .withAudience(audience)
-                    .withIssuer(issuer)
+                    .require(Algorithm.HMAC256(jwtSecret))
+                    .withIssuer("hmh-server")
                     .build()
             )
             validate { credential ->
-                val userId = credential.payload.subject
-                if (userId != null) {
-                    JWTPrincipal(credential.payload)
-                } else null
+                try {
+                    val userId = credential.payload.getClaim(JwtProvider.USER_CLAIM).asLong()
+                    val role = credential.payload.getClaim(JwtProvider.ROLE_CLAIM).asString()
+                    
+                    if (userId != null && role == "USER") {
+                        JWTPrincipal(credential.payload)
+                    } else {
+                        null
+                    }
+                } catch (e: Exception) {
+                    null
+                }
             }
-            challenge { defaultScheme, realm ->
+            challenge { _, _ ->
                 call.respond(
                     HttpStatusCode.Unauthorized,
                     BaseResponse.error<Unit>(
-                        code = "UNAUTHORIZED",
+                        code = "JWT_INVALID_TOKEN",
                         message = "유효하지 않은 토큰입니다."
                     )
                 )
@@ -51,16 +56,32 @@ fun Application.configureSecurity() {
             realm = "HMH Server"
             verifier(
                 JWT
-                    .require(Algorithm.HMAC256(secret))
-                    .withAudience(audience)
-                    .withIssuer(issuer)
+                    .require(Algorithm.HMAC256(jwtSecret))
+                    .withIssuer("hmh-server")
                     .build()
             )
             validate { credential ->
-                val tokenType = credential.payload.getClaim("type").asString()
-                if (tokenType == "refresh") {
-                    JWTPrincipal(credential.payload)
-                } else null
+                try {
+                    val userId = credential.payload.getClaim(JwtProvider.USER_CLAIM).asLong()
+                    val role = credential.payload.getClaim(JwtProvider.ROLE_CLAIM).asString()
+                    
+                    if (userId != null && role == "USER") {
+                        JWTPrincipal(credential.payload)
+                    } else {
+                        null
+                    }
+                } catch (e: Exception) {
+                    null
+                }
+            }
+            challenge { _, _ ->
+                call.respond(
+                    HttpStatusCode.Unauthorized,
+                    BaseResponse.error<Unit>(
+                        code = "JWT_REFRESH_TOKEN_INVALID",
+                        message = "유효하지 않은 리프레시 토큰입니다."
+                    )
+                )
             }
         }
         
@@ -68,16 +89,32 @@ fun Application.configureSecurity() {
             realm = "HMH Server Admin"
             verifier(
                 JWT
-                    .require(Algorithm.HMAC256(secret))
-                    .withAudience(audience)
-                    .withIssuer(issuer)
+                    .require(Algorithm.HMAC256(jwtSecret))
+                    .withIssuer("hmh-server")
                     .build()
             )
             validate { credential ->
-                val userRole = credential.payload.getClaim("role").asString()
-                if (userRole == "admin") {
-                    JWTPrincipal(credential.payload)
-                } else null
+                try {
+                    val role = credential.payload.getClaim(JwtProvider.ROLE_CLAIM).asString()
+                    val adminId = credential.payload.getClaim("adminId").asString()
+                    
+                    if (role == "ADMIN" && adminId != null) {
+                        JWTPrincipal(credential.payload)
+                    } else {
+                        null
+                    }
+                } catch (e: Exception) {
+                    null
+                }
+            }
+            challenge { _, _ ->
+                call.respond(
+                    HttpStatusCode.Forbidden,
+                    BaseResponse.error<Unit>(
+                        code = "JWT_ADMIN_TOKEN_REQUIRED",
+                        message = "관리자 토큰이 필요합니다."
+                    )
+                )
             }
         }
     }

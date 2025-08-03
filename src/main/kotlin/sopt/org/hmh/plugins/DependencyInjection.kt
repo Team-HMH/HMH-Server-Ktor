@@ -13,6 +13,15 @@ fun Application.configureDI() {
 }
 
 val appModule = module {
+    // JWT 의존성
+    single<sopt.org.hmh.global.auth.jwt.JwtProvider> { 
+        val jwtSecret = getProperty<String>("jwt.secret", "default-secret")
+        sopt.org.hmh.global.auth.jwt.JwtProvider(jwtSecret) 
+    }
+    single<sopt.org.hmh.global.auth.jwt.TokenService> { 
+        sopt.org.hmh.global.auth.jwt.TokenService(get()) 
+    }
+    
     // Repository 의존성
     single<sopt.org.hmh.domain.user.repository.UserRepository> { 
         sopt.org.hmh.domain.user.repository.UserRepositoryImpl() 
