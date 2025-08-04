@@ -69,6 +69,15 @@ val appModule = module {
     single<sopt.org.hmh.domain.challenge.repository.ChallengeRepository> { 
         sopt.org.hmh.domain.challenge.repository.ChallengeRepositoryImpl() 
     }
+    single<sopt.org.hmh.domain.dailychallenge.repository.DailyChallengeRepository> { 
+        sopt.org.hmh.domain.dailychallenge.repository.DailyChallengeRepositoryImpl() 
+    }
+    single<sopt.org.hmh.domain.app.repository.ChallengeAppRepository> { 
+        sopt.org.hmh.domain.app.repository.ChallengeAppRepositoryImpl() 
+    }
+    single<sopt.org.hmh.domain.app.repository.HistoryAppRepository> { 
+        sopt.org.hmh.domain.app.repository.HistoryAppRepositoryImpl() 
+    }
     
     // Service 의존성
     single<sopt.org.hmh.domain.user.service.UserService> { 
@@ -79,5 +88,17 @@ val appModule = module {
     }
     single<sopt.org.hmh.domain.auth.service.AuthService> {
         sopt.org.hmh.domain.auth.service.AuthService(get(), get(), get())
+    }
+    single<sopt.org.hmh.domain.dailychallenge.service.DailyChallengeService> {
+        sopt.org.hmh.domain.dailychallenge.service.DailyChallengeService(get())
+    }
+    single<sopt.org.hmh.domain.app.service.ChallengeAppService> {
+        sopt.org.hmh.domain.app.service.ChallengeAppService(get())
+    }
+    single<sopt.org.hmh.domain.app.service.HistoryAppService> {
+        sopt.org.hmh.domain.app.service.HistoryAppService(get())
+    }
+    single<sopt.org.hmh.domain.point.service.PointService> {
+        sopt.org.hmh.domain.point.service.PointService(get(), get(), get())
     }
 }
