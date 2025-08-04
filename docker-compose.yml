@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # HMH Ktor Application
+  hmh-server:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - KTOR_ENV=dev
+      - DB_HOST=mysql
+      - DB_USER=hmh_user
+      - DB_PASSWORD=hmh_password
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
+      - KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
+      - APPLE_TEAM_ID=${APPLE_TEAM_ID}
+      - APPLE_KEY_ID=${APPLE_KEY_ID}
+      - APPLE_CLIENT_ID=${APPLE_CLIENT_ID}
+    depends_on:
+      - mysql
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=hmh
+      - MYSQL_USER=hmh_user
+      - MYSQL_PASSWORD=hmh_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+
+  # phpMyAdmin (선택사항 - DB 관리용)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      - PMA_HOST=mysql
+      - PMA_PORT=3306
+      - PMA_USER=hmh_user
+      - PMA_PASSWORD=hmh_password
+    ports:
+      - "8081:80"
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
