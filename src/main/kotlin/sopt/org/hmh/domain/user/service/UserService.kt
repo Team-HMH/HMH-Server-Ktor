@@ -75,6 +75,19 @@ class UserService(
             deletedUsers = totalUsers - activeUsers
         )
     }
+    
+    // Point 관련 메소드들
+    suspend fun findUserById(id: Long): User {
+        return getUserById(id) // 기존 getUserById 재사용
+    }
+    
+    suspend fun addPoint(id: Long, pointToAdd: Int): User {
+        return increaseUserPoint(id, pointToAdd) // 기존 increaseUserPoint 재사용
+    }
+    
+    suspend fun usePoint(id: Long, pointToUse: Int): User {
+        return decreaseUserPoint(id, pointToUse) // 기존 decreaseUserPoint 재사용
+    }
 }
 
 data class UserStats(

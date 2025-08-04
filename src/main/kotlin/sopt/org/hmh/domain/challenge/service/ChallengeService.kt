@@ -121,6 +121,11 @@ class ChallengeService(
             throw BadRequestException("시작 날짜는 1년 이후로 설정할 수 없습니다.")
         }
     }
+    
+    // Point Service에서 사용할 메소드
+    suspend fun findChallengesByUserId(userId: Long): List<Challenge> {
+        return getChallengesByUserId(userId) // 기존 메소드 재사용
+    }
 }
 
 data class ChallengeStats(
