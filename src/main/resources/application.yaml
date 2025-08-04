@@ -1,0 +1,55 @@
+ktor:
+  development: true
+  deployment:
+    port: 8080
+    watch:
+      - classes
+      - resources
+
+# Database Configuration
+database:
+  url: "jdbc:mysql://localhost:3306/hmh"
+  driver: "com.mysql.cj.jdbc.Driver"
+  user: ${DB_USER:hmh_user}
+  password: ${DB_PASSWORD:password}
+  maximumPoolSize: 20
+  minimumIdle: 5
+  connectionTimeout: 30000
+  idleTimeout: 600000
+  maxLifetime: 1800000
+
+# JWT Configuration  
+jwt:
+  secret: ${JWT_SECRET:your-secret-key-change-this-in-production}
+  issuer: ${JWT_ISSUER:hmh-server}
+  audience: ${JWT_AUDIENCE:hmh-client}
+  accessTokenExpiry: 3600000  # 1 hour
+  refreshTokenExpiry: 1209600000  # 2 weeks
+
+# OAuth Configuration
+oauth:
+  kakao:
+    clientId: ${KAKAO_CLIENT_ID:your-kakao-client-id}
+    clientSecret: ${KAKAO_CLIENT_SECRET:your-kakao-client-secret}
+    redirectUri: ${KAKAO_REDIRECT_URI:http://localhost:8080/auth/kakao/callback}
+  apple:
+    teamId: ${APPLE_TEAM_ID:your-apple-team-id}
+    keyId: ${APPLE_KEY_ID:your-apple-key-id}
+    clientId: ${APPLE_CLIENT_ID:your-apple-client-id}
+
+# Slack Configuration
+slack:
+  errorWebhookUrl: ${SLACK_ERROR_WEBHOOK_URL:}
+  newUserWebhookUrl: ${SLACK_NEW_USER_WEBHOOK_URL:}
+
+# CORS Configuration
+cors:
+  allowedHosts: ${ALLOWED_HOSTS:localhost:3000,localhost:8080}
+  allowCredentials: true
+
+# Logging Configuration
+logging:
+  level:
+    ktor.application: INFO
+    org.jetbrains.exposed.sql: DEBUG
+    sopt.org.hmh: DEBUG

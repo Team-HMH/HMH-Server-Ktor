@@ -1,0 +1,26 @@
+ktor:
+  development: true
+  deployment:
+    port: 8080
+
+# JWT Configuration (테스트용)
+jwt:
+  secret: "test-secret-key-for-development-only"
+  issuer: "hmh-server-test"
+  audience: "hmh-client-test"
+  accessTokenExpiry: 3600000  # 1 hour
+  refreshTokenExpiry: 1209600000  # 2 weeks
+
+# CORS Configuration
+cors:
+  allowedHosts: "localhost:3000,localhost:8080"
+  allowCredentials: true
+
+# 데이터베이스 설정 없음 (테스트용)
+# database 설정을 주석 처리하여 데이터베이스 없이 실행
+
+# Logging Configuration
+logging:
+  level:
+    ktor.application: INFO
+    sopt.org.hmh: DEBUG
