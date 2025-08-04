@@ -21,7 +21,7 @@ object DailyChallenges : LongIdTable("daily_challenges") {
 }
 
 enum class Status {
-    NONE, SUCCESS, FAIL
+    NONE, FAILURE, EARNED, UNEARNED
 }
 
 data class DailyChallenge(
