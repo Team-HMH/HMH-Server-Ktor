@@ -10,6 +10,9 @@ import sopt.org.hmh.global.common.response.BaseResponse
 import sopt.org.hmh.global.common.exception.BusinessException
 import sopt.org.hmh.domain.user.controller.userRoutes
 import sopt.org.hmh.domain.auth.controller.authRoutes
+import sopt.org.hmh.domain.dailychallenge.controller.dailyChallengeRoutes
+import sopt.org.hmh.domain.app.controller.appRoutes
+import sopt.org.hmh.domain.point.controller.pointRoutes
 
 fun Application.configureRouting() {
     install(StatusPages) {
@@ -67,10 +70,20 @@ fun Application.configureRouting() {
             authRoutes()
             userRoutes()
             
+            // Point API (v1)
+            pointRoutes()
+            
             // 인증이 필요한 라우트 (JWT 설정 완료)
             authenticate("jwt-auth") {
                 // 여기에 인증이 필요한 라우트들 추가 예정
             }
+        }
+        
+        route("/api/v2") {
+            // DailyChallenge API는 v2로 제공
+            dailyChallengeRoutes()
+            // App API도 v2로 제공
+            appRoutes()
             
             // 관리자 전용 라우트 (JWT 설정 완료)
             authenticate("jwt-admin") {
