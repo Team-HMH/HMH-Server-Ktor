@@ -15,6 +15,13 @@ fun Application.configureSecurity() {
     
     if (jwtSecret.isNullOrEmpty()) {
         println("⚠️ JWT 설정이 불완전합니다. 인증 기능은 비활성화됩니다.")
+        // Authentication 플러그인은 설치하되 빈 설정으로 유지
+        install(Authentication) {
+            // 빈 설정
+            jwt("jwt-auth") {}
+            jwt("jwt-refresh") {}
+            jwt("jwt-admin") {}
+        }
         return
     }
     
