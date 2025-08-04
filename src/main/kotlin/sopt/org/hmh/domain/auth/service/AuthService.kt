@@ -46,7 +46,6 @@ class AuthService(
     
     suspend fun reissueToken(refreshToken: String): ReissueResponse {
         return tokenService.reissueAccessToken(refreshToken)
-            ?: throw AuthException.RefreshTokenExpired
     }
     
     suspend fun logout(userId: Long): Boolean {

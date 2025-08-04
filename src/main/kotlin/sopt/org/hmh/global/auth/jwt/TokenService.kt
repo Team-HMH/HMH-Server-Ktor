@@ -36,19 +36,29 @@ class TokenService(private val jwtProvider: JwtProvider) {
         )
     }
     
-    fun reissueAccessToken(refreshToken: String): ReissueResponse? {
-        val userId = jwtProvider.getUserIdFromToken(refreshToken) ?: return null
-        
-        if (jwtProvider.isTokenExpired(refreshToken)) {
-            return null
+    fun reissueAccessToken(refreshToken: String): ReissueResponse {
+        try {
+            val decodedJWT = jwtProvider.verifyToken(refreshToken)
+            val userId = decodedJWT.getClaim(JwtProvider.USER_CLAIM).asLong()
+                ?: throw JwtException.InvalidRefreshToken
+            
+            if (jwtProvider.isTokenExpired(refreshToken)) {
+                throw JwtException.ExpiredRefreshToken
+            }
+            
+            val newAccessToken = jwtProvider.generateAccessToken(userId)
+            
+            return ReissueResponse(
+                accessToken = JwtProvider.TOKEN_PREFIX + newAccessToken,
+                accessTokenExpiresIn = JwtProvider.ACCESS_TOKEN_EXPIRATION_TIME
+            )
+        } catch (e: JwtException) {
+            when (e) {
+                is JwtException.ExpiredAccessToken -> throw JwtException.ExpiredRefreshToken
+                is JwtException.InvalidAccessToken -> throw JwtException.InvalidRefreshToken
+                else -> throw e
+            }
         }
-        
-        val newAccessToken = jwtProvider.generateAccessToken(userId)
-        
-        return ReissueResponse(
-            accessToken = JwtProvider.TOKEN_PREFIX + newAccessToken,
-            accessTokenExpiresIn = JwtProvider.ACCESS_TOKEN_EXPIRATION_TIME
-        )
     }
     
     fun generateAdminToken(adminId: String): AdminTokenResponse {
@@ -61,7 +71,12 @@ class TokenService(private val jwtProvider: JwtProvider) {
     }
     
     fun validateToken(token: String): Boolean {
-        return jwtProvider.verifyToken(token) != null && !jwtProvider.isTokenExpired(token)
+        return try {
+            jwtProvider.verifyToken(token)
+            !jwtProvider.isTokenExpired(token)
+        } catch (e: JwtException) {
+            false
+        }
     }
     
     fun getUserIdFromToken(token: String): Long? {

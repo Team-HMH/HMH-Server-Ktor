@@ -8,6 +8,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import sopt.org.hmh.global.auth.jwt.JwtException
 import sopt.org.hmh.global.auth.social.SocialLoginProvider
 import sopt.org.hmh.global.auth.social.SocialPlatform
 import sopt.org.hmh.global.auth.social.SocialUserInfo
@@ -85,7 +86,7 @@ class KakaoLoginProvider(
             val tokenResponse = Json.decodeFromString<KakaoTokenResponse>(response.bodyAsText())
             return tokenResponse.access_token
         } else {
-            throw Exception("카카오 액세스 토큰 획득 실패: ${response.status}")
+            throw JwtException.InvalidSocialAccessToken
         }
     }
 
@@ -107,7 +108,7 @@ class KakaoLoginProvider(
                 email = userResponse.kakao_account?.email
             )
         } else {
-            throw Exception("카카오 사용자 정보 조회 실패: ${response.status}")
+            throw JwtException.InvalidSocialAccessToken
         }
     }
 

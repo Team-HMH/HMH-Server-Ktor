@@ -62,48 +62,94 @@ class JwtProvider(private val jwtSecret: String) {
             .sign(algorithm)
     }
     
-    fun verifyToken(token: String): DecodedJWT? {
-        return try {
+    fun verifyToken(token: String): DecodedJWT {
+        try {
+            val cleanToken = extractToken(token)
+            if (cleanToken.isBlank()) {
+                throw JwtException.EmptyPrincipleException
+            }
+            
             val verifier = JWT.require(algorithm)
                 .withIssuer(issuer)
                 .build()
             
-            verifier.verify(extractToken(token))
+            return verifier.verify(cleanToken)
         } catch (e: JWTVerificationException) {
-            null
+            when {
+                e.message?.contains("expired") == true -> throw JwtException.ExpiredAccessToken
+                e.message?.contains("invalid signature") == true -> throw JwtException.InvalidAccessToken
+                e.message?.contains("malformed") == true -> throw JwtException.InvalidTokenHeader
+                else -> throw JwtException.InvalidAccessToken
+            }
+        } catch (e: JwtException) {
+            throw e
+        } catch (e: Exception) {
+            throw JwtException.InvalidAccessToken
         }
     }
     
     fun getUserIdFromToken(token: String): Long? {
-        val decodedJWT = verifyToken(token) ?: return null
-        return decodedJWT.getClaim(USER_CLAIM).asLong()
+        return try {
+            val decodedJWT = verifyToken(token)
+            decodedJWT.getClaim(USER_CLAIM).asLong()
+        } catch (e: JwtException) {
+            null
+        }
     }
     
     fun getRoleFromToken(token: String): String? {
-        val decodedJWT = verifyToken(token) ?: return null
-        return decodedJWT.getClaim(ROLE_CLAIM).asString()
+        return try {
+            val decodedJWT = verifyToken(token)
+            decodedJWT.getClaim(ROLE_CLAIM).asString()
+        } catch (e: JwtException) {
+            null
+        }
     }
     
     fun getAdminIdFromToken(token: String): String? {
-        val decodedJWT = verifyToken(token) ?: return null
-        return decodedJWT.getClaim("adminId").asString()
+        return try {
+            val decodedJWT = verifyToken(token)
+            val role = decodedJWT.getClaim(ROLE_CLAIM).asString()
+            if (role != "ADMIN") {
+                throw JwtException.InvalidAdminToken
+            }
+            decodedJWT.getClaim("adminId").asString()
+        } catch (e: JwtException) {
+            null
+        }
     }
     
     fun isTokenExpired(token: String): Boolean {
-        val decodedJWT = verifyToken(token) ?: return true
-        return decodedJWT.expiresAt.before(Date())
+        return try {
+            val decodedJWT = verifyToken(token)
+            decodedJWT.expiresAt.before(Date())
+        } catch (e: JwtException) {
+            true
+        }
     }
     
     fun getExpirationTime(token: String): LocalDateTime? {
-        val decodedJWT = verifyToken(token) ?: return null
-        return decodedJWT.expiresAt.toInstant()
-            .atZone(ZoneId.systemDefault())
-            .toLocalDateTime()
+        return try {
+            val decodedJWT = verifyToken(token)
+            decodedJWT.expiresAt.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime()
+        } catch (e: JwtException) {
+            null
+        }
     }
     
     private fun extractToken(bearerToken: String): String {
+        if (bearerToken.isBlank()) {
+            throw JwtException.EmptyPrincipleException
+        }
+        
         return if (bearerToken.startsWith(TOKEN_PREFIX)) {
-            bearerToken.substring(TOKEN_PREFIX.length)
+            val token = bearerToken.substring(TOKEN_PREFIX.length)
+            if (token.isBlank()) {
+                throw JwtException.InvalidTokenHeader
+            }
+            token
         } else {
             bearerToken
         }

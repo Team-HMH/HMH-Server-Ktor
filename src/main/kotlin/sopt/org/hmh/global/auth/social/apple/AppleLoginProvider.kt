@@ -11,6 +11,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import sopt.org.hmh.global.auth.jwt.JwtException
 import sopt.org.hmh.global.auth.social.SocialLoginProvider
 import sopt.org.hmh.global.auth.social.SocialPlatform
 import sopt.org.hmh.global.auth.social.SocialUserInfo
@@ -88,9 +89,9 @@ class AppleLoginProvider(
 
         if (response.status == HttpStatusCode.OK) {
             val tokenResponse = Json.decodeFromString<AppleTokenResponse>(response.bodyAsText())
-            return tokenResponse.access_token ?: throw Exception("Apple 액세스 토큰이 없습니다")
+            return tokenResponse.access_token ?: throw JwtException.InvalidSocialAccessToken
         } else {
-            throw Exception("Apple 액세스 토큰 획득 실패: ${response.status}")
+            throw JwtException.InvalidSocialAccessToken
         }
     }
 
@@ -115,7 +116,7 @@ class AppleLoginProvider(
             // 1. JWT 헤더에서 kid 추출
             val jwt = JWT.decode(identityToken)
             val kid = jwt.getHeaderClaim("kid").asString()
-                ?: throw Exception("JWT 헤더에 kid가 없습니다")
+                ?: throw JwtException.InvalidIdentityToken
 
             // 2. Apple 공개 키 조회
             val publicKey = getApplePublicKey(kid)
@@ -144,7 +145,13 @@ class AppleLoginProvider(
             )
 
         } catch (e: JWTVerificationException) {
-            throw Exception("Apple Identity Token 검증 실패: ${e.message}")
+            when {
+                e.message?.contains("expired") == true -> throw JwtException.ExpiredIdentityToken
+                e.message?.contains("claims") == true -> throw JwtException.InvalidIdentityTokenClaims
+                else -> throw JwtException.InvalidIdentityToken
+            }
+        } catch (e: Exception) {
+            throw JwtException.InvalidIdentityToken
         }
     }
 
@@ -152,24 +159,28 @@ class AppleLoginProvider(
         val response: HttpResponse = httpClient.get(APPLE_KEYS_URL)
         
         if (response.status != HttpStatusCode.OK) {
-            throw Exception("Apple 공개 키 조회 실패: ${response.status}")
+            throw JwtException.UnableToCreateApplePublicKey
         }
 
         val keysResponse = Json.decodeFromString<ApplePublicKeysResponse>(response.bodyAsText())
         val key = keysResponse.keys.find { it.kid == kid }
-            ?: throw Exception("해당 kid의 Apple 공개 키를 찾을 수 없습니다: $kid")
+            ?: throw JwtException.UnableToCreateApplePublicKey
 
         return generateRSAPublicKey(key.n, key.e)
     }
 
     private fun generateRSAPublicKey(nStr: String, eStr: String): RSAPublicKey {
-        val n = BigInteger(1, Base64.getUrlDecoder().decode(nStr))
-        val e = BigInteger(1, Base64.getUrlDecoder().decode(eStr))
-        
-        val keySpec = RSAPublicKeySpec(n, e)
-        val keyFactory = KeyFactory.getInstance("RSA")
-        
-        return keyFactory.generatePublic(keySpec) as RSAPublicKey
+        try {
+            val n = BigInteger(1, Base64.getUrlDecoder().decode(nStr))
+            val e = BigInteger(1, Base64.getUrlDecoder().decode(eStr))
+            
+            val keySpec = RSAPublicKeySpec(n, e)
+            val keyFactory = KeyFactory.getInstance("RSA")
+            
+            return keyFactory.generatePublic(keySpec) as RSAPublicKey
+        } catch (e: Exception) {
+            throw JwtException.UnableToCreateApplePublicKey
+        }
     }
 
     private fun generateClientSecret(): String {
